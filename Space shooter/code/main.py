@@ -2,6 +2,36 @@ import pygame
 from os.path import join
 from random import randint
 
+
+# Player Class
+class Player(pygame.sprite.Sprite):
+    def __init__(self, groups) -> None:
+        super().__init__(groups)
+        self.image = pygame.image.load(join('images', 'player.png')).convert_alpha()
+        self.rect = self.image.get_frect(center = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
+        self.direction = pygame.math.Vector2()
+        self.speed = 300
+
+    def update(self, dt):
+        keys = pygame.key.get_pressed()
+        recent_keys = pygame.key.get_just_pressed()
+
+        self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
+        self.direction.y = int(keys[pygame.K_DOWN]) - int(keys[pygame.K_UP])
+        self.direction = self.direction.normalize() if self.direction else self.direction
+        self.rect.center += self.direction * self.speed * dt
+
+        if recent_keys[pygame.K_SPACE]:
+            print("fire laser")
+
+# Star Class
+class Star(pygame.sprite.Sprite):
+    def __init__(self, groups, star_surface) -> None:
+        super().__init__(groups)
+        self.image = star_surface
+        self.rect = self.image.get_frect(center = (randint(0, WINDOW_WIDTH), randint(0, WINDOW_HEIGHT)))
+
+
 # General Setup
 pygame.init() # Initialize Pygame
 
@@ -20,15 +50,13 @@ surface = pygame.Surface((100, 200))
 surface.fill('orange')
 x = 100
 
-# Import Images
-player_surface = pygame.image.load(join('images', 'player.png')).convert_alpha() # Only works if the command to execute the script is in the main directory (i.e. space shooter)
-player_rect = player_surface.get_frect(center = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
-player_direction = pygame.math.Vector2(20, -20)
-player_speed = 10
-
+# Group
+all_sprites = pygame.sprite.Group()
 star_surface = pygame.image.load(join('images', 'star.png')).convert_alpha()
-star_positions = [(randint(0, WINDOW_WIDTH - 100), randint(0, WINDOW_HEIGHT - 100)) for _ in range(20)]
+stars = [Star(all_sprites, star_surface) for _ in range(20)]
+player = Player(all_sprites)
 
+# Import Images
 meteor_surface = pygame.image.load(join('images','meteor.png')).convert_alpha()
 meteor_rect = meteor_surface.get_frect(center = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
 
@@ -45,31 +73,22 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    # Update All Sprites
+    all_sprites.update(dt)
+
     # Draw Game
     display_surface.fill('black')
-
+    
     # Draw Meteor
-    display_surface.blit(meteor_surface, meteor_rect)
+    # display_surface.blit(meteor_surface, meteor_rect)
     
     # Draw Laser
-    display_surface.blit(laser_surface, laser_rect)
-    
-    # Draw Stars
-    for i in range(20):
-        display_surface.blit(star_surface, star_positions[i])
+    # display_surface.blit(laser_surface, laser_rect)
 
     # Draw Player
-    display_surface.blit(player_surface, player_rect)
-
-    # Bound Player like Dvd Logo
-    if player_rect.top <= 0 or player_rect.bottom >= WINDOW_HEIGHT:
-        player_direction.y *= -1
-    if player_rect.left <= 0 or player_rect.right >= WINDOW_WIDTH:
-        player_direction.x *= -1
+    all_sprites.draw(display_surface)
 
     # Move Player
-    player_rect.center += player_direction * player_speed * dt
-
     pygame.display.update() # Update Display
 
 pygame.quit() # Quit Pygame
