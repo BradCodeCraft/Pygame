@@ -69,28 +69,39 @@ class Laser(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(midbottom = position)
     
     def update(self, dt):
+        if pygame.sprite.spritecollide(self, meteor_sprites, True):
+            self.kill()
+
         self.rect.centery -= 400 * dt
 
         if self.rect.bottom < 0:
             self.kill()
 
+def display_score():
+    current_time = pygame.time.get_ticks()
+    text_surface = font.render(str(current_time // 100), True, '#FFFFFF')
+    print(text_surface.get_size())
+    text_rect = text_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
+    counter_surface = pygame.Surface((text_rect.width + 50, text_rect.height + 10))
+    counter_rect = counter_surface.get_frect(midbottom = (WINDOW_WIDTH / 2, WINDOW_HEIGHT - 50))
+
+    pygame.draw.rect(display_surface, '#FFFFFF', counter_rect, 3, 10)    
+    display_surface.blit(text_surface, text_rect)
+
+
 # General Setup
 pygame.init() # Initialize Pygame
-
 WINDOW_WIDTH, WINDOW_HEIGHT = 1280, 720
 display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-
-# Set the Title
-pygame.display.set_caption('Space Shooter')
+pygame.display.set_caption('Space Shooter') # Set the Title
+running = True
+clock = pygame.time.Clock() 
 
 # Import Sprite Surfaces
 star_surface = pygame.image.load(join('images', 'star.png')).convert_alpha()
 meteor_surface = pygame.image.load(join('images','meteor.png')).convert_alpha()
 laser_surface = pygame.image.load(join('images','laser.png')).convert_alpha()
-
-running = True
-
-clock = pygame.time.Clock() 
+font = pygame.font.Font(join('images', 'Oxanium-Bold.ttf'), 40)
 
 # Surface
 surface = pygame.Surface((100, 200))
@@ -99,11 +110,10 @@ x = 100
 
 # Group
 all_sprites = pygame.sprite.Group()
+meteor_sprites = pygame.sprite.Group()
 
 # Stars
 stars = [Star(all_sprites, star_surface) for _ in range(20)]
-
-# Meteor
 
 # Player
 player = Player(all_sprites)
@@ -111,7 +121,6 @@ player = Player(all_sprites)
 # Custom Event for Meteor
 meteor_event = pygame.event.custom_type()
 pygame.time.set_timer(meteor_event, 500)
-
 
 # Game Loop
 while running:
@@ -123,24 +132,23 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == meteor_event:
-            Meteor(meteor_surface, (randint(0, WINDOW_WIDTH), 0), all_sprites)
+            Meteor(meteor_surface, (randint(0, WINDOW_WIDTH), 0), (all_sprites, meteor_sprites))
 
-    # Update All Sprites
+    # Update Sprites
     all_sprites.update(dt)
 
-    # Draw Game
-    display_surface.fill('black')
-    
-    # Draw Meteor
-    # display_surface.blit(meteor_surface, meteor_rect)
-    
-    # Draw Laser
-    # display_surface.blit(laser_surface, laser_rect)
+    # Collision
+    if pygame.sprite.spritecollide(player, meteor_sprites, True):
+        player.kill()
 
-    # Draw Player
+    # Draw Background
+    display_surface.fill('#3A2E3F')
+    
+    display_score()
+
+    # Draw Everything
     all_sprites.draw(display_surface)
 
-    # Move Player
     pygame.display.update() # Update Display
 
 pygame.quit() # Quit Pygame
